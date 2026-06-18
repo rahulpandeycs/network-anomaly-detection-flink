@@ -1,0 +1,19 @@
+.gradle/
+build/
+*.class
+*.jar
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated data
+data/*.csv
+data/anomalies/
+!data/.gitkeep

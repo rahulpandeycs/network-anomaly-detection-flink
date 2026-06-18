@@ -1,0 +1,90 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'com.network.anomaly'
+version = '1.0.0'
+
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    flinkVersion = '1.19.1'
+    jacksonVersion = '2.17.2'
+    kafkaVersion = '3.7.0'
+}
+
+dependencies {
+    // Flink
+    implementation "org.apache.flink:flink-java:${flinkVersion}"
+    implementation "org.apache.flink:flink-streaming-java:${flinkVersion}"
+    implementation "org.apache.flink:flink-clients:${flinkVersion}"
+    implementation "org.apache.flink:flink-connector-kafka:3.2.0-1.19"
+    implementation "org.apache.flink:flink-connector-files:${flinkVersion}"
+
+    // Kafka
+    implementation "org.apache.kafka:kafka-clients:${kafkaVersion}"
+
+    // Jackson for JSON
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+
+    // CSV parsing for anomaly generator
+    implementation 'org.apache.commons:commons-csv:1.11.0'
+
+    // Logging
+    implementation 'ch.qos.logback:logback-classic:1.5.6'
+
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
+}
+
+application {
+    mainClass = 'com.network.anomaly.NetworkAnomalyDetectionJob'
+}
+
+tasks.withType(JavaExec) {
+    jvmArgs(
+        '--add-opens', 'java.base/java.util=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED'
+    )
+}
+
+test {
+    useJUnitPlatform()
+}
+
+task runProducer(type: JavaExec) {
+    mainClass = 'com.network.anomaly.producer.DataProducerMain'
+    classpath = sourceSets.main.runtimeClasspath
+    description = 'Run the Kafka data producer that generates random network events'
+}
+
+task runGenerator(type: JavaExec) {
+    mainClass = 'com.network.anomaly.generator.AnomalyGeneratorMain'
+    classpath = sourceSets.main.runtimeClasspath
+    description = 'Run the anomaly generator that produces labeled CSV test data'
+}
+
+task runFlinkJob(type: JavaExec) {
+    mainClass = 'com.network.anomaly.NetworkAnomalyDetectionJob'
+    classpath = sourceSets.main.runtimeClasspath
+    description = 'Run the Flink anomaly detection pipeline locally'
+}
+
+shadowJar {
+    archiveBaseName = 'network-anomaly-detection'
+    archiveClassifier = 'all'
+    archiveVersion = version
+    mergeServiceFiles()
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+}
